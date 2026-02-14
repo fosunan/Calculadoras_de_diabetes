@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora Dosis de Insulina - Hospital Universitario La Merced</title>
+  <title>Calculadora Dosis de Insulina</title>
   <style>
     /* Reset básico para asegurar box-sizing */
     *, *::before, *::after {
@@ -290,12 +290,12 @@
 <body>
 
   <div class="logo-container">
-    <img src="COLOR_3_TINTAS.jpg" alt="Logo Área de Gestión Sanitaria de Osuna" />
+    <img src="LOGO - Aprende a Vivir con Diabetes.png" alt="Logo" />
   </div>
 
   <div class="hospital-info">
-    <h1>Hospital Universitario La Merced</h1>
-    <h1 style="color: green;">CALCULADORA AVANZADA DE DOSIS DE INSULINA RÁPIDA</h1>
+    <h1>CALCULADORA DE DOSIS DE INSULINA RÁPIDA</h1>
+    <h1 style="color: green;">(Nivel avanzado)</h1>
 
   </div>
 
@@ -310,6 +310,16 @@
 
   <h2>1. Insulina y glucemia</h2>
 
+  <label for="tipoInsulinaRapida">¿Qué tipo de insulina rápida usa?:</label>
+  <select id="tipoInsulinaRapida">
+  <option value="" selected disabled>Seleccionar</option>
+  <option value="Apidra">Apidra</option>
+  <option value="Novorapid">Novorapid</option>
+  <option value="Humalog">Humalog</option>
+  <option value="Fiasp">Fiasp</option>
+  </select>
+  <span class="error-message" id="errorTipoInsulinaRapida"></span>
+  <br>
   <label for="rapida">¿Cuántas unidades de insulina rápida se administró cada día en total? (de media en los últimos 2 días):</label>
   <input id="rapida" type="number" min="3" max="100" step="0.1" />
   <span class="error-message" id="errorRapida"></span>
@@ -531,13 +541,18 @@
   <p class="mensaje-rojo" id="noRegistroAviso" style="display:none;">No ha indicado la ratio y/o raciones de esta comida. El resultado obtenido solo es útil si va a corregir su nivel actual de glucosa sin comer. </p>
   <p class="strong-black-text">Los resultados ofrecidos son únicamente orientativos y no sustituyen la consulta ni las indicaciones de un profesional sanitario.</p>
   <p class="aviso-extra">Puede que esta dosis de insulina necesite algún ajuste extra como es el caso de situaciones por enfermedad (fiebre, diarrea,...), algunos tratamientos (corticoides,...), menstruación,... que pueden hacer variar estos cálculos. Consulta con tu profesional sanitario.</p>
+  <div id="recomendacionesBox" style="display:none; background-color: #008000; text-align: center; padding: 10px 0; margin: 15px auto; max-width: 600px; border-radius: 5px;">
+      <span style="color: white; font-weight: bold; font-size: 1.2em; letter-spacing: 2px;">RECOMENDACIONES</span>
+      <div id="recomendacionesTexto" style="margin-top: 10px; color: white; text-align: left; padding: 0 10px;">
+          </div>
+  </div>
   <pre class="pasos" id="pasos"></pre>
   
   <hr class="footer-divider">
   <p class="footer-text">DESARROLLADO POR:</p>
   <p class="footer-name">Francisco José Osuna Navarro</p>
   <p class="profession-info">Enfermero de la consulta EPA de Diabetes</p>
-  <button onclick="window.location.href='https://fosunan.github.io/Calculadoras-de-insulina/'">Volver al Menú Principal</button>
+  <button onclick="window.location.href='https://fosunan.github.io/Calculadoras_de_diabetes/SUBMENU3.HTML'">Volver al Menú Principal</button>
   <script>
     // Función genérica para validar input y mostrar mensaje de error
     function validateInput(inputId, errorId, condition) {
@@ -879,6 +894,20 @@
       const glucemiaActual = parseFloat(glucemiaActualValue);
       isValid = validateInput('glucemiaActual', 'errorGlucemiaActual', value => isWithinRange(value, 55, 450)) && isValid;
 
+      // --- VALIDACIÓN DE TIPO DE INSULINA RÁPIDA ---
+      const tipoInsulinaRapida = document.getElementById('tipoInsulinaRapida').value;
+      const errorTipoInsulinaRapida = document.getElementById('errorTipoInsulinaRapida');
+      if (tipoInsulinaRapida === "") {
+        document.getElementById('tipoInsulinaRapida').classList.add('input-error');
+        errorTipoInsulinaRapida.textContent = 'No ha indicado el tipo de insulina rápida que usa.';
+        errorTipoInsulinaRapida.style.display = 'block';
+        isValid = false;
+      } else {
+        document.getElementById('tipoInsulinaRapida').classList.remove('input-error');
+        errorTipoInsulinaRapida.style.display = 'none';
+      }
+      // --- FIN VALIDACIÓN ---
+
       const glucemiaObjetivo = parseFloat(document.getElementById('glucemiaObjetivo').value);
       isValid = validateInput('glucemiaObjetivo', 'errorGlucemiaObjetivo', value => isWithinRange(value, 100, 180)) && isValid;
 
@@ -982,6 +1011,21 @@
       let flechaGlucemia = document.getElementById('flechaGlucemia').value;
       let ajusteGlucemiaFlecha = 0; // El nuevo ajuste en mg/dL
 
+      // --- CÁLCULO DEL NUEVO PARÁMETRO GP15 (Glucemia + 15 minutos) ---
+      let GP15 = glucemiaActual; // Valor por defecto: 'estable'
+
+      if (flechaGlucemia === 'ascenso_lento') {
+        GP15 = glucemiaActual + 30;
+      } else if (flechaGlucemia === 'ascenso_rapido') {
+        GP15 = glucemiaActual + 60;
+      } else if (flechaGlucemia === 'descenso_lento') {
+        GP15 = glucemiaActual - 20;
+      } else if (flechaGlucemia === 'descenso_rapido') {
+        GP15 = glucemiaActual - 40;
+      }
+      // El valor de GP15 queda ahora listo para ser usado
+      // --- FIN CÁLCULO GP15 --- 
+      
       // Determinar el ajuste en mg/dL basado en la flecha
       if (flechaGlucemia === 'ascenso_lento') {
           ajusteGlucemiaFlecha = 25;
@@ -1098,7 +1142,8 @@
       } else {
         document.getElementById('correccionAltaAviso').style.display = 'none';
       }
-
+      document.getElementById('recomendacionesTexto').innerHTML = '<b>Aún no hay recomendaciones específicas.</b>'; // Recomendación por defecto
+      document.getElementById('recomendacionesBox').style.display = 'block';
       document.getElementById('pasos').innerHTML = pasosTexto.replace(/\n/g, '<br>');
       document.getElementById('pasos').style.display = 'block';
 
