@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora Dosis de Insulina - Hospital Universitario La Merced</title>
+  <title>Calculadora Dosis de Insulina</title>
   <style>
     /* Reset básico para asegurar box-sizing */
     *, *::before, *::after {
@@ -229,13 +229,13 @@
 <body>
 
   <div class="logo-container">
-    <img src="COLOR_3_TINTAS.jpg" alt="Logo Área de Gestión Sanitaria de Osuna" />
+    <img src="LOGO - Aprende a Vivir con Diabetes.png" alt="Logo" />
   </div>
 
   <div class="hospital-info">
-    <h1>Hospital Universitario La Merced</h1>
+    <h1>CALCULADORA DE PAUTA DE INSULINA RÁPIDA</h1>
   
-    <h1 style="color: green;">CALCULADORA CORRECTORA DE PAUTA DE INSULINA RÁPIDA</h1>
+    <h1 style="color: green;">(Nivel Intermedio)</h1>
     <h4 class="subtitle-profesionales">SOLO PARA PROFESIONALES SANITARIOS</h4>
   </div>
 
@@ -335,9 +335,9 @@
   <h2>4. Cálculos promedios</h2>
   <button onclick="calcularInsulina()">Calcular pauta de insulina</button>
 
-  <div class="resultado">Dosis Total de Insulina (DTI): <span id="valorDTI">—</span></div>
-  <div class="resultado">Factor de Sensibilidad (FS): <span id="valorFS">—</span></div>
-  <div class="resultado">Dosis de Insulina Rápida Promedio: <span id="valorDRP">—</span></div>
+  <div class="resultado">Dosis Total de Insulina (diaria): <span id="valorDTI">—</span></div>
+  <div class="resultado">Factor de Sensibilidad: <span id="valorFS">—</span></div>
+  <div class="resultado">Dosis de Insulina Rápida Promedio (en esta comida): <span id="valorDRP">—</span></div>
   <div class="resultado">Glucemia Anterior Promedio: <span id="valorGAP">—</span></div>
   <div class="resultado">Glucemia Posterior Promedio: <span id="valorGPP">—</span></div>
 
@@ -384,7 +384,7 @@
     </div>
 
     <div class="larger-spacing"></div>
-    <a href="https://fosunan.github.io/Calculadoras-de-insulina/" style="text-decoration: none;">
+    <a href="https://fosunan.github.io/Calculadoras_de_diabetes/SUBMENU3.HTML" style="text-decoration: none;">
       <button>Volver al Menú Principal</button>
     </a>
   </div>
@@ -677,45 +677,103 @@
             pasosDetalleSeccion5 += "PASO 5. Pauta de Insulina Rápida Aplicada (PIRA): No se pudo calcular.\n\n";
         }
 
-        // 🟢 PASO 6. Pauta de Insulina Rápida Recomendada (PIRR) - USA AJUSTE POSTERIOR
-        if (piraAplicada !== null && dosisCorreccionPosterior !== null) {
-        pautaRecomendada = dosisRapidaPromedio + dosisCorreccionPosterior; 
-        pasosDetalleSeccion5 += "PASO 6. Pauta de Insulina Rápida Recomendada (PIRR)\n";
-        pasosDetalleSeccion5 += `  Fórmula: PIRR = Dosis de insulina rápida promedio (${dosisRapidaPromedio.toFixed(1)}) + Ajuste de corrección posterior (${dosisCorreccionPosterior.toFixed(1)}) \n`; // <-- NUEVA FÓRMULA MOSTRADA
-    
-        if (pautaRecomendada < 0) {
-            pautaRecomendada = 0;
-            pasosDetalleSeccion5 += `  PIRR se ajusta a 0, ya que el resultado fue negativo.\n`;
+        // --- Lógica de la Pauta de Referencia y Validación ---
+        const pautaReferenciaInput = document.getElementById('pautaReferencia');
+        const errorPautaReferenciaElement = document.getElementById('errorPautaReferencia');
+        let debeDetenerCalculo = false; // Bandera para controlar la detención
+
+        if (piraAplicada !== null && pautaRecomendada !== null) {
+            // 1. Establecer el rango dinámico
+            rangoMinimoPauta = Math.min(piraAplicada, pautaRecomendada);
+            rangoMaximoPauta = Math.max(piraAplicada, pautaRecomendada);
+            
+            // 2. Actualizar el mensaje de error dinámico con el rango calculado
+            errorPautaReferenciaElement.textContent = 
+                `Introduce un valor válido entre ${rangoMinimoPauta.toFixed(1)} y ${rangoMaximoPauta.toFixed(1)} Unidades.`;
+
+            // 3. Mostrar el contenedor y el botón
+            document.getElementById('contenedorPautaReferencia').style.display = 'block';
+            document.getElementById('btnCalcularCorreccion').style.display = 'block';
+
+            // --- VALIDACIÓN DE LA PAUTA DE REFERENCIA ANTES DE CALCULAR LA TABLA (REQUERIMIENTO) ---
+            
+            // a) Comprobación de valor obligatorio/numérico (input-error se añade en obtenerValor)
+            if (pautaReferenciaInput.classList.contains('input-error')) {
+                debeDetenerCalculo = true;
+            }
+
+            // b) Comprobación de rango dinámico
+            if (pautaReferencia !== null) { 
+                if (pautaReferencia < rangoMinimoPauta || pautaReferencia > rangoMaximoPauta) {
+                    // Error de rango
+                    errorPautaReferenciaElement.textContent = `Error de rango: El valor debe estar entre ${rangoMinimoPauta.toFixed(1)} y ${rangoMaximoPauta.toFixed(1)} Unidades.`;
+                    errorPautaReferenciaElement.style.display = 'block';
+                    pautaReferenciaInput.classList.add('input-error');
+                    debeDetenerCalculo = true;
+                } else {
+                    // Si el valor es válido, aseguramos que el mensaje de error se oculte (por si había un error previo)
+                    errorPautaReferenciaElement.style.display = 'none';
+                    pautaReferenciaInput.classList.remove('input-error');
+                }
+            }
+        
+        } else {
+             // Si PIRA/PIRR no son válidos, ocultar todo lo de corrección
+            document.getElementById('contenedorPautaReferencia').style.display = 'none';
+            document.getElementById('btnCalcularCorreccion').style.display = 'none';
         }
-     
-        pasosDetalleSeccion5 += `  Resultado: ${pautaRecomendada.toFixed(1)} Unidades\n\n`;
-    } else {
-        pasosDetalleSeccion5 += "PASO 6. Pauta de Insulina Rápida Recomendada (PIRR): No se pudo calcular (faltan valores de PIRA o DC Posterior).\n\n";
-    }
-     
-        // --- LÓGICA DE SEGURIDAD (Variación > 60%) ---
-        let avisoVariacion = '';
-        if (piraAplicada !== null && pautaRecomendada !== null && piraAplicada > 0) {
-            const variacionPorcentual = Math.abs(pautaRecomendada - piraAplicada) / piraAplicada;
-           
-            if (variacionPorcentual >= 0.60) {
-                const tipoCambio = pautaRecomendada > piraAplicada ? 'aumento' : 'descenso';
-                avisoVariacion = `<span class="resultado-aviso">
-                    <p> </p>           
-                    <span style="font-weight: bold; color: red;">⚠️ AVISO:</span>
-                    <span style="font-weight: bold; color: black;">La nueva pauta recomendada supone un ${tipoCambio} mayor al 60% de la pauta aplicada: Revise los datos.</span>
-                </span>`;
+
+        // 4. Detener el flujo si hay un error
+        if (debeDetenerCalculo) {
+            // Limpiar resultados de la Sección 6
+            document.getElementById('pasosSeccion6').innerHTML = '';
+            document.getElementById('seccion6-mensaje-intro').innerHTML = '';
+            return; // <-- CLAVE: Detiene la función y evita el cálculo de la tabla
+        }
+        // --- Fin Lógica de la Pauta de Referencia y Validación ---
+        
+        // --- INICIO VALIDACIÓN Y SALIDA PARA CÁLCULO DE CORRECCIÓN (SECCIÓN 6) ---
+        
+        const pautaReferenciaInput = document.getElementById('pautaReferencia');
+        const errorPautaReferenciaElement = document.getElementById('errorPautaReferencia');
+        let errorDetenerCalculo = false; // Bandera para saber si debemos detener el cálculo de la tabla
+
+        // La clase 'input-error' se añade en obtenerValor si el campo está vacío o no es numérico.
+        // 1. Comprobar si hay un error de campo obligatorio/numérico (input-error)
+        if (pautaReferenciaInput.classList.contains('input-error')) {
+            errorDetenerCalculo = true;
+        }
+        
+        // 2. Validar el rango dinámico SOLO si hay un valor y el campo está visible
+        if (pautaReferencia !== null && piraAplicada !== null && pautaRecomendada !== null && document.getElementById('contenedorPautaReferencia').style.display === 'block') {
+            if (pautaReferencia < rangoMinimoPauta || pautaReferencia > rangoMaximoPauta) {
+                // Error de rango dinámico
+                errorPautaReferenciaElement.textContent = `Error de rango: El valor debe estar entre ${rangoMinimoPauta.toFixed(1)} y ${rangoMaximoPauta.toFixed(1)} Unidades.`;
+                errorPautaReferenciaElement.style.display = 'block';
+                pautaReferenciaInput.classList.add('input-error');
+                errorDetenerCalculo = true;
+            } else {
+                 // Si el valor es válido, aseguramos que el error de rango dinámico no se muestre
+                errorPautaReferenciaElement.textContent = `Introduce un valor válido entre ${rangoMinimoPauta.toFixed(1)} y ${rangoMaximoPauta.toFixed(1)} Unidades.`;
             }
         }
-        // --- 5. CÁLCULO DE LA PAUTA DE CORRECCIÓN PROPUESTA (Sección 6) ---
         
-        const pasosSeccion6Elemento = document.getElementById('pasosSeccion6');
-        // Inicializar pasosDetalleSeccion6 (necesario para el registro, aunque no contenga el mensaje HTML)
-        let pasosDetalleSeccion6 = "";
-
-        // --- 6. CÁLCULO DE LA PAUTA DE CORRECCIÓN PROPUESTA (Sección 6) ---
+        // 3. Detener el flujo de cálculo si se detectó un error en la validación de Pauta de Referencia
+        if (errorDetenerCalculo) {
+            // Limpiar resultados de la Sección 6 y el mensaje introductorio
+            document.getElementById('pasosSeccion6').innerHTML = '';
+            document.getElementById('seccion6-mensaje-intro').innerHTML = '';
+            
+            // Detener el flujo para evitar el cálculo de la tabla
+            return; 
+        }
+        
+        // --- FIN VALIDACIÓN Y SALIDA ---
+        
+        // --- CÁLCULO DE LA PAUTA DE CORRECCIÓN PROPUESTA (Sección 6) ---
         
         // 1. GENERACIÓN E INSERCIÓN DEL MENSAJE HTML INTRODUCTORIO
+        const pasosSeccion6Elemento = document.getElementById('pasosSeccion6'); // <-- CORRECCIÓN: Definición única aquí
         const mensajeIntroductorioHTML = `
             <p>
                 La pauta aplicada por el usuario es de ${piraAplicada.toFixed(1)} Unidades, pero los cálculos recomiendan una pauta de ${pautaRecomendada.toFixed(1)} Unidades.
@@ -727,10 +785,10 @@
             </p>
         `;
         document.getElementById('seccion6-mensaje-intro').innerHTML = mensajeIntroductorioHTML;
-
+        
         // Lógica de cálculo de la tabla
         let relacionInsulinaGlucemia = null;
-        pasosDetalleSeccion6 += "### CÁLCULOS DE LA PAUTA DE CORRECCIÓN PROPUESTA:\n\n";
+        let pasosDetalleSeccion6 = "### CÁLCULOS DE LA PAUTA DE CORRECCIÓN PROPUESTA:\n\n"; // <-- CORRECCIÓN: Definición única aquí
 
         // Verificar que la pauta de referencia sea válida, no cero y exista el factor de sensibilidad
         if (pautaReferencia !== null && pautaReferencia > 0 && factorSensibilidad !== null) {
@@ -769,60 +827,18 @@
         } else if (pautaReferencia === 0) {
             pasosDetalleSeccion6 += `⚠️ AVISO: No se puede calcular la tabla de corrección porque la Pauta de Referencia es 0.`;
         } else {
-             pasosDetalleSeccion6 += `PASO 1. Pauta de Referencia: Ingrese un valor válido para calcular la corrección.`;
+             // Si el flujo llega aquí, el valor es null, pero la validación ya lo manejó.
         }       
 
+        // Sección 6: Muestra el contenido generado (cálculos y tabla) o los avisos.
+        pasosSeccion6Elemento.innerHTML = pasosDetalleSeccion6;
 
-        // Sección 4
-        pasosElemento.textContent = pasosDetalle;
-        document.getElementById('valorDTI').textContent = `${dosisTotalInsulina.toFixed(1)} Unidades.`;
-        document.getElementById('valorFS').textContent = factorSensibilidad !== null ? `${factorSensibilidad.toFixed(1)} mg/dL por Unidad.` : "No calculado (DTI = 0).";
-        document.getElementById('valorDRP').textContent = `${dosisRapidaPromedio.toFixed(1)} Unidades.`;
-        document.getElementById('valorGAP').textContent = `${gap.toFixed(0)} mg/dL.`;
-        document.getElementById('valorGPP').textContent = `${gpp.toFixed(0)} mg/dL.`;
-
-        // Insertar los avisos de CV justo después de los promedios
-        if (cvAvisoMensajes) {
-            const tempDiv = document.createElement('div');
-            tempDiv.classList.add('cv-aviso-parent'); // Contenedor para la limpieza
-            tempDiv.innerHTML = cvAvisoMensajes;
-            // Insertar los avisos antes del elemento 'pasos'
-            pasosElemento.parentNode.insertBefore(tempDiv, pasosElemento);
-        }
-
-        // Sección 5
-        pasosSeccion5Elemento.textContent = pasosDetalleSeccion5;          
-        document.getElementById('valorPautaReal').textContent = piraAplicada !== null ? `${piraAplicada.toFixed(1)} Unidades.` : '—';
-        const valorPautaRecomendadaElement = document.getElementById('valorPautaRecomendada');
-        valorPautaRecomendadaElement.innerHTML = pautaRecomendada !== null ? `${pautaRecomendada.toFixed(1)} Unidades.` : '—';
-  
-        // Añadir el mensaje de aviso de variación si existe.
-        if (avisoVariacion) {
-            valorPautaRecomendadaElement.parentElement.innerHTML += avisoVariacion;
-        }       
-
-        // 1. Establecer el rango dinámico para el campo de Pauta de Referencia y actualizar el mensaje
-        if (piraAplicada !== null && pautaRecomendada !== null) {
-            rangoMinimoPauta = Math.min(piraAplicada, pautaRecomendada);
-            rangoMaximoPauta = Math.max(piraAplicada, pautaRecomendada);
-            
-            // 2. Actualizar el mensaje de error dinámico con el rango calculado
-            document.getElementById('errorPautaReferencia').textContent = 
-                `Introduce un valor válido entre ${rangoMinimoPauta.toFixed(1)} y ${rangoMaximoPauta.toFixed(1)} Unidades.`;
-        }
-
-        if (piraAplicada !== null && pautaRecomendada !== null) {
-            document.getElementById('contenedorPautaReferencia').style.display = 'block';
-            document.getElementById('btnCalcularCorreccion').style.display = 'block';           
-        }
-        // Sección 6 (Mostrando mensajes por defecto)
-        pasosSeccion6Elemento.textContent = '';
-      
+    } // Fin de la función calcularInsulina()        
+    
     // VINCULACIÓN DE BOTONES (Debe estar fuera de la función)
     document.getElementById('btnCalcular').addEventListener('click', calcularInsulina);
     document.getElementById('btnCalcularCorreccion').addEventListener('click', calcularInsulina);
         
-    } // Fin de la función calcularInsulina()        
   </script>
             
 </body>
